@@ -22,14 +22,14 @@ function resolveHostIp() {
 
 const detectedHostIp = resolveHostIp();
 
-export const DEFAULT_URL = 'http://192.168.1.3:5000/api';
+export const DEFAULT_URL = 'https://mypoultry-back-production.up.railway.app/api';
 
 let currentBaseUrl = DEFAULT_URL;
 
 // Candidate URLs to try on Android in priority order
 const CANDIDATE_URLS = [
-  'http://192.168.1.3:5000/api',
-  ...(detectedHostIp && detectedHostIp !== '192.168.1.3' ? [`http://${detectedHostIp}:5000/api`] : []),
+  'https://mypoultry-back-production.up.railway.app/api',
+  ...(detectedHostIp ? [`http://${detectedHostIp}:5000/api`] : []),
   'http://localhost:5000/api',
   'http://10.0.2.2:5000/api',
 ];
@@ -43,10 +43,10 @@ export const setCustomBaseUrl = async (url) => {
 
 export const getBaseUrl = async () => {
   const saved = await AsyncStorage.getItem('@poultry_api_url');
-  // If previously saved with 10.0.2.2, remove it so physical devices work
-  if (saved && saved.includes('10.0.2.2')) {
+  // If previously saved with local network IPs, remove it so production works
+  if (saved && (saved.includes('10.0.2.2') || saved.includes('192.168'))) {
     await AsyncStorage.removeItem('@poultry_api_url');
-    currentBaseUrl = 'http://192.168.1.3:5000/api';
+    currentBaseUrl = DEFAULT_URL;
     return currentBaseUrl;
   }
   if (saved) {
@@ -54,8 +54,7 @@ export const getBaseUrl = async () => {
     return currentBaseUrl;
   }
 
-  const detected = resolveHostIp();
-  currentBaseUrl = detected ? `http://${detected}:5000/api` : 'http://192.168.1.3:5000/api';
+  currentBaseUrl = DEFAULT_URL;
   return currentBaseUrl;
 };
 
