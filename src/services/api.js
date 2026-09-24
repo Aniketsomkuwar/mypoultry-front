@@ -22,16 +22,21 @@ function resolveHostIp() {
 
 const detectedHostIp = resolveHostIp();
 
-export const DEFAULT_URL = 'https://mypoultry-back-production.up.railway.app/api';
+// In production (APK), use Railway. In development (npx expo start), use local PC.
+export const PROD_URL = 'https://mypoultry-back-production.up.railway.app/api';
+export const DEV_URL = detectedHostIp ? `http://${detectedHostIp}:5000/api` : 'http://192.168.1.3:5000/api';
+
+export const DEFAULT_URL = __DEV__ ? DEV_URL : PROD_URL;
 
 let currentBaseUrl = DEFAULT_URL;
 
 // Candidate URLs to try on Android in priority order
 const CANDIDATE_URLS = [
-  'https://mypoultry-back-production.up.railway.app/api',
+  DEFAULT_URL,
   ...(detectedHostIp ? [`http://${detectedHostIp}:5000/api`] : []),
   'http://localhost:5000/api',
   'http://10.0.2.2:5000/api',
+  'https://mypoultry-back-production.up.railway.app/api',
 ];
 
 export const setCustomBaseUrl = async (url) => {
