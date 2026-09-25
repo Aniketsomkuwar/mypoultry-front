@@ -55,12 +55,12 @@ export const FarmerSuppliesScreen = ({ onNavigate }) => {
     setLoading(true);
     try {
       const [invRes, supRes] = await Promise.all([
-        Api.getFeedInventory(activeBatch?.id),
+        Api.getFeedSummary(activeBatch?.id),
         Api.getSupplies(selectedCategory, activeBatch?.id),
       ]);
 
       if (invRes && invRes.success) {
-        setFeedInventory(invRes.feedInventory);
+        setFeedInventory(invRes.feedSummary);
       }
       if (supRes && supRes.success) {
         setSupplies(supRes.supplies || []);
@@ -138,10 +138,14 @@ export const FarmerSuppliesScreen = ({ onNavigate }) => {
   };
 
   const inv = feedInventory || {
-    totalReceived: 0,
-    totalUsed: 0,
-    remaining: 0,
+    received: 0,
+    used: 0,
+    available: 0,
+    avgDailyUsage: 0,
+    estimatedDaysRemaining: null,
   };
+
+  const isLowFeed = inv.estimatedDaysRemaining !== null && inv.estimatedDaysRemaining <= 2;
 
   return (
     <ScrollView
@@ -169,10 +173,20 @@ export const FarmerSuppliesScreen = ({ onNavigate }) => {
         </TouchableOpacity>
       </View>
 
+      {isLowFeed ? (
+        <View style={styles.alertBanner}>
+          <Text style={styles.alertBannerTitle}>⚠️ Low Feed Warning</Text>
+          <Text style={styles.alertBannerText}>
+            You have {inv.estimatedDaysRemaining} {inv.estimatedDaysRemaining === 1 ? 'day' : 'days'} of feed left. 
+            Order more immediately to avoid starving the flock.
+          </Text>
+        </View>
+      ) : null}
+
       <View style={styles.inventoryGrid}>
         <StatCard
           label="FEED RECEIVED"
-          value={inv.totalReceived.toLocaleString()}
+          value={inv.received.toLocaleString()}
           unit="KG"
           variant="default"
           subtext="Total delivered to farm"
@@ -180,18 +194,18 @@ export const FarmerSuppliesScreen = ({ onNavigate }) => {
 
         <StatCard
           label="FEED USED"
-          value={inv.totalUsed.toLocaleString()}
+          value={inv.used.toLocaleString()}
           unit="KG"
           variant="warning"
-          subtext="Consumed by flock"
+          subtext={`Avg ${inv.avgDailyUsage || 0} KG/day`}
         />
 
         <StatCard
           label="FEED REMAINING"
-          value={inv.remaining.toLocaleString()}
+          value={inv.available.toLocaleString()}
           unit="KG"
-          variant={inv.remaining < 500 ? 'danger' : 'info'}
-          subtext="Current shed stock"
+          variant={inv.available < 500 ? 'danger' : 'info'}
+          subtext={inv.estimatedDaysRemaining !== null ? `Est. ${inv.estimatedDaysRemaining} days left` : 'No usage data yet'}
         />
       </View>
 
@@ -485,6 +499,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  alertBanner: {
+    backgroundColor: Colors.dangerLight,
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.danger,
+  },
+  alertBannerTitle: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: Colors.dangerDark,
+    marginBottom: 4,
+  },
+  alertBannerText: {
+    fontSize: 13,
+    color: Colors.danger,
+    fontWeight: '600',
+    lineHeight: 18,
   },
   inventoryGrid: {
     gap: 6,

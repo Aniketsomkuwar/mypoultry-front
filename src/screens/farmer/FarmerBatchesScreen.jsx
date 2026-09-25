@@ -376,6 +376,12 @@ export const FarmerBatchesScreen = ({ onNavigate, onSelectBatch }) => {
               const avgWeight = batch.averageBodyWeight
                 ? `${batch.averageBodyWeight.toFixed(2)} KG`
                 : '--';
+              const cFcr = batch.ibGcDetails?.correctedFcr
+                ? batch.ibGcDetails.correctedFcr.toFixed(4)
+                : '--';
+              const gcAmount = batch.ibGcDetails?.estimatedGc
+                ? `${currency} ${batch.ibGcDetails.estimatedGc.toLocaleString()}`
+                : '--';
 
               const liftingFormatted = batch.liftingDate
                 ? new Date(batch.liftingDate).toLocaleDateString('en-IN', {
@@ -433,8 +439,21 @@ export const FarmerBatchesScreen = ({ onNavigate, onSelectBatch }) => {
                       <Text style={styles.compVal}>{fcr}</Text>
                     </View>
                     <View style={styles.completedGridCol}>
+                      <Text style={styles.compLabel}>CORRECTED FCR</Text>
+                      <Text style={[styles.compVal, { color: Colors.info }]}>{cFcr}</Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.completedGrid, { marginTop: 8 }]}>
+                    <View style={styles.completedGridCol}>
                       <Text style={styles.compLabel}>AVG BODY WT</Text>
                       <Text style={styles.compVal}>{avgWeight}</Text>
+                    </View>
+                    <View style={[styles.completedGridCol, { flex: 2 }]}>
+                      <Text style={styles.compLabel}>EST. GROWING CHARGE</Text>
+                      <Text style={[styles.compVal, { color: Colors.success, fontSize: 18 }]}>
+                        {gcAmount}
+                      </Text>
                     </View>
                   </View>
 

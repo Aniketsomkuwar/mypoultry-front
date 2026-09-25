@@ -32,6 +32,7 @@ export const WorkerTodayEntryScreen = ({ onNavigate }) => {
   const [startingBirds, setStartingBirds] = useState(0);
   const [deaths, setDeaths] = useState('');
   const [feedUsed, setFeedUsed] = useState('');
+  const [waterUsed, setWaterUsed] = useState('');
   const [weight, setWeight] = useState('');
   const [fcr, setFcr] = useState('');
   const [notes, setNotes] = useState('');
@@ -60,6 +61,9 @@ export const WorkerTodayEntryScreen = ({ onNavigate }) => {
             // Already recorded today, prefill
             setDeaths(String(todayRec.deaths || ''));
             setFeedUsed(String(todayRec.feedUsed || ''));
+            if (todayRec.waterUsed !== null && todayRec.waterUsed !== undefined) {
+              setWaterUsed(String(todayRec.waterUsed));
+            }
             setFcr(todayRec.fcr ? String(todayRec.fcr) : '');
             setNotes(todayRec.notes || '');
             setStartingBirds(currentCount + (todayRec.deaths || 0));
@@ -108,6 +112,10 @@ export const WorkerTodayEntryScreen = ({ onNavigate }) => {
       errs.feedUsed = 'Feed cannot be negative.';
     }
 
+    if (waterUsed !== '' && (isNaN(waterUsed) || Number(waterUsed) < 0)) {
+      errs.waterUsed = 'Water used must be a positive number.';
+    }
+
     if (fcr !== '' && (isNaN(fcr) || Number(fcr) <= 0)) {
       errs.fcr = 'FCR must be a positive number.';
     }
@@ -127,6 +135,7 @@ export const WorkerTodayEntryScreen = ({ onNavigate }) => {
       date,
       deaths: Number(deaths),
       feedUsed: Number(feedUsed),
+      waterUsed: waterUsed ? Number(waterUsed) : null,
       fcr: fcr ? Number(fcr) : null,
       notes: notes.trim(),
     };
@@ -280,7 +289,22 @@ export const WorkerTodayEntryScreen = ({ onNavigate }) => {
           />
 
           <Input
-            label="3. Sample Body Weight (Optional - KG)"
+            label="3. Water Used (Optional - Liters)"
+            placeholder="e.g. 500"
+            value={waterUsed}
+            onChangeText={(t) => {
+              setWaterUsed(t);
+              setErrors((prev) => ({ ...prev, waterUsed: null }));
+              setSavedSuccess(false);
+            }}
+            keyboardType="numeric"
+            suffix="L"
+            error={errors.waterUsed}
+            helperText="Amount of water consumed today in liters"
+          />
+
+          <Input
+            label="4. Sample Body Weight (Optional - KG)"
             placeholder="e.g. 1.82"
             value={weight}
             onChangeText={(t) => {
@@ -293,7 +317,7 @@ export const WorkerTodayEntryScreen = ({ onNavigate }) => {
           />
 
           <Input
-            label="4. Notes (Optional)"
+            label="5. Notes (Optional)"
             placeholder="e.g. Feed truck arrived late, all birds active"
             value={notes}
             onChangeText={(t) => {

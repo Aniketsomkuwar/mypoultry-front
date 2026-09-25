@@ -12,6 +12,8 @@ import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { BatchClosingModal } from '../../components/common/BatchClosingModal';
 import { FarmEarningsScreen } from './FarmEarningsScreen';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { useAuth } from '../../context/AuthContext';
 import { Api } from '../../services/api';
 
@@ -60,6 +62,28 @@ export const BatchPerformanceScreen = ({ onNavigate, selectedBatchId }) => {
 
   const onRefresh = async () => {
     await Promise.all([loadBatches(), loadPerformance(currentId), refreshBatchData()]);
+  };
+
+  const handleExport = async () => {
+    try {
+      setLoading(true);
+      const csvData = await Api.exportBatchCsv(currentId);
+      if (csvData) {
+        const fileUri = FileSystem.documentDirectory + `batch_${currentId}_export.csv`;
+        await FileSystem.writeAsStringAsync(fileUri, csvData, { encoding: FileSystem.EncodingType.UTF8 });
+        
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, { UTI: 'public.comma-separated-values-text', mimeType: 'text/csv' });
+        } else {
+          alert('Sharing is not available on this device');
+        }
+      }
+    } catch (err) {
+      console.warn('Export failed', err);
+      alert('Failed to export batch data.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const p = performance || {};
@@ -336,6 +360,13 @@ export const BatchPerformanceScreen = ({ onNavigate, selectedBatchId }) => {
       ) : null}
 
       <Button
+        title="EXPORT EXCEL / CSV"
+        variant="secondary"
+        onPress={handleExport}
+        style={{ marginBottom: 12, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border }}
+      />
+
+      <Button
         title="BACK TO DASHBOARD"
         variant="secondary"
         onPress={() => onNavigate && onNavigate('Home')}
@@ -370,29 +401,25 @@ const styles = StyleSheet.create({
   },
   topSubNav: {
     flexDirection: 'row',
-    backgroundColor: Colors.border,
-    borderRadius: 14,
-    padding: 4,
-    marginVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
     marginHorizontal: 16,
+    marginBottom: 12,
+    marginTop: 8,
   },
   subTabBtn: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 10,
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
   },
   subTabBtnActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderBottomColor: Colors.primary,
   },
   subTabBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: 13,
+    fontWeight: '700',
     color: Colors.textMuted,
     letterSpacing: 0.5,
   },

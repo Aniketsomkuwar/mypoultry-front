@@ -149,6 +149,12 @@ export const Api = {
     return request('/auth/me');
   },
 
+  // Reports
+  getBatchHealth: async (batchId) => {
+    const query = batchId ? `?batchId=${batchId}` : '';
+    return request(`/reports/batch-health${query}`);
+  },
+
   // Batches
   getActiveBatch: async () => {
     return request('/batches/active');
@@ -197,6 +203,10 @@ export const Api = {
   },
 
   // Body Weight Tracking
+  getWeightSummary: async (batchId = null) => {
+    const q = batchId ? `?batchId=${batchId}` : '';
+    return request(`/weights/summary${q}`);
+  },
   getLatestWeight: async (batchId = null) => {
     const q = batchId ? `?batchId=${batchId}` : '';
     return request(`/weights/latest${q}`);
@@ -213,9 +223,9 @@ export const Api = {
   },
 
   // Feed Inventory & IB Supplies
-  getFeedInventory: async (batchId = null) => {
+  getFeedSummary: async (batchId = null) => {
     const q = batchId ? `?batchId=${batchId}` : '';
-    return request(`/supplies/feed-inventory${q}`);
+    return request(`/supplies/feed-summary${q}`);
   },
   getSupplies: async (category = 'All', batchId = null) => {
     let q = [];
@@ -276,10 +286,33 @@ export const Api = {
   },
 
   // Reports
+  getBatchTimeline: async (batchId) => {
+    return request(`/reports/batch-timeline?batchId=${batchId}`);
+  },
+  getWeeklySummary: async () => {
+    return request(`/reports/weekly`);
+  },
   getReports: async (period = 'batch', batchId = null) => {
     let q = [`period=${period}`];
     if (batchId) q.push(`batchId=${batchId}`);
     return request(`/reports?${q.join('&')}`);
+  },
+  exportBatchCsv: async (batchId) => {
+    // Custom fetch because request() expects JSON
+    const primaryUrl = await getBaseUrl();
+    const token = await AsyncStorage.getItem('@poultry_auth_token');
+    
+    const res = await fetch(`${primaryUrl}/reports/export-csv?batchId=${batchId}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
+    });
+    
+    if (!res.ok) {
+      throw new Error(`Export failed with status ${res.status}`);
+    }
+    
+    return await res.text();
   },
 
   // Offline Sync
@@ -287,6 +320,29 @@ export const Api = {
     return request('/sync/daily-records', {
       method: 'POST',
       body: JSON.stringify({ items }),
+    });
+  },
+
+  // Notifications
+  registerPushToken: async (data) => {
+    return request('/notifications/register-token', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  unregisterPushToken: async (data) => {
+    return request('/notifications/unregister-token', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  getNotifPrefs: async () => {
+    return request('/notifications/prefs');
+  },
+  updateNotifPrefs: async (prefs) => {
+    return request('/notifications/prefs', {
+      method: 'PATCH',
+      body: JSON.stringify(prefs),
     });
   },
 };

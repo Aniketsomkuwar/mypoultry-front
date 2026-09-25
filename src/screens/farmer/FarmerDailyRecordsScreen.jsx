@@ -30,6 +30,7 @@ export const FarmerDailyRecordsScreen = () => {
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
   const [deaths, setDeaths] = useState('');
   const [feedUsed, setFeedUsed] = useState('');
+  const [waterUsed, setWaterUsed] = useState('');
   const [fcr, setFcr] = useState('');
   const [notes, setNotes] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
@@ -58,12 +59,18 @@ export const FarmerDailyRecordsScreen = () => {
       setEntryDate(rec.date);
       setDeaths(String(rec.deaths || 0));
       setFeedUsed(String(rec.feedUsed || 0));
+      if (rec.waterUsed !== null && rec.waterUsed !== undefined) {
+        setWaterUsed(String(rec.waterUsed));
+      } else {
+        setWaterUsed('');
+      }
       setFcr(rec.fcr ? String(rec.fcr) : '');
       setNotes(rec.notes || '');
     } else {
       setEntryDate(new Date().toISOString().split('T')[0]);
       setDeaths('');
       setFeedUsed('');
+      setWaterUsed('');
       setFcr('');
       setNotes('');
     }
@@ -80,6 +87,10 @@ export const FarmerDailyRecordsScreen = () => {
       setModalError('Please enter valid feed in KG.');
       return;
     }
+    if (waterUsed !== '' && (isNaN(waterUsed) || Number(waterUsed) < 0)) {
+      setModalError('Please enter valid water used in Liters.');
+      return;
+    }
 
     setSaveLoading(true);
     setModalError('');
@@ -89,6 +100,7 @@ export const FarmerDailyRecordsScreen = () => {
         date: entryDate,
         deaths: Number(deaths),
         feedUsed: Number(feedUsed),
+        waterUsed: waterUsed ? Number(waterUsed) : null,
         fcr: fcr ? Number(fcr) : null,
         notes: notes.trim(),
       });
@@ -146,12 +158,14 @@ export const FarmerDailyRecordsScreen = () => {
           <Text style={styles.title}>DAILY RECORDS</Text>
           <Text style={styles.subtitle}>{activeBatch?.name || 'All Flock Entries'}</Text>
         </View>
-        <Button
-          title="+ NEW ENTRY"
-          onPress={() => handleOpenAdd()}
-          style={styles.addBtn}
-          textStyle={{ fontSize: 14 }}
-        />
+        {activeBatch ? (
+          <Button
+            title="+ NEW ENTRY"
+            onPress={() => handleOpenAdd()}
+            style={styles.addBtn}
+            textStyle={{ fontSize: 14 }}
+          />
+        ) : null}
       </View>
 
       <FlatList
@@ -210,6 +224,13 @@ export const FarmerDailyRecordsScreen = () => {
                 <Text style={styles.detailLabel}>Feed Used:</Text>
                 <Text style={[styles.detailValue, { color: Colors.info }]}>
                   {selectedRecord.feedUsed} KG
+                </Text>
+              </View>
+
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Water Used:</Text>
+                <Text style={[styles.detailValue, { color: Colors.info }]}>
+                  {selectedRecord.waterUsed !== null && selectedRecord.waterUsed !== undefined ? `${selectedRecord.waterUsed} L` : 'Not logged'}
                 </Text>
               </View>
 
@@ -299,6 +320,15 @@ export const FarmerDailyRecordsScreen = () => {
               placeholder="e.g. 245"
               keyboardType="numeric"
               suffix="KG"
+            />
+
+            <Input
+              label="Water Used (Optional - Liters)"
+              value={waterUsed}
+              onChangeText={setWaterUsed}
+              placeholder="e.g. 500"
+              keyboardType="numeric"
+              suffix="L"
             />
 
             <Input

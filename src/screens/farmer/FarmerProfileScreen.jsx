@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { BatchClosingModal } from '../../components/common/BatchClosingModal';
 import { useAuth } from '../../context/AuthContext';
 import { Api } from '../../services/api';
+import { Switch } from 'react-native';
 
 export const FarmerProfileScreen = ({ onNavigate, onSelectBatch }) => {
   const { user, farm, activeBatch, logout, refreshBatchData } = useAuth();
@@ -34,6 +35,28 @@ export const FarmerProfileScreen = ({ onNavigate, onSelectBatch }) => {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [notifPrefs, setNotifPrefs] = useState({ dailyDataSubmitted: true });
+  const [prefsSaving, setPrefsSaving] = useState(false);
+
+  const loadNotifPrefs = useCallback(async () => {
+    try {
+      const res = await Api.getNotifPrefs();
+      if (res && res.success) setNotifPrefs(res.prefs);
+    } catch (e) { /* silent */ }
+  }, []);
+
+  const handleTogglePref = async (key, value) => {
+    const updated = { ...notifPrefs, [key]: value };
+    setNotifPrefs(updated);
+    setPrefsSaving(true);
+    try {
+      await Api.updateNotifPrefs({ [key]: value });
+    } catch (e) {
+      setNotifPrefs(notifPrefs); // revert on failure
+    } finally {
+      setPrefsSaving(false);
+    }
+  };
 
   const loadAllBatches = async () => {
     try {
@@ -48,7 +71,8 @@ export const FarmerProfileScreen = ({ onNavigate, onSelectBatch }) => {
 
   useEffect(() => {
     loadAllBatches();
-  }, []);
+    loadNotifPrefs();
+  }, [loadNotifPrefs]);
 
   const handleOpenNewBatch = () => {
     const nextNum = (batches.length || 0) + 1;
@@ -288,6 +312,26 @@ export const FarmerProfileScreen = ({ onNavigate, onSelectBatch }) => {
         }}
         batch={activeBatch}
       />
+
+      {/* Notification Settings */}
+      <Card style={{ padding: 18, marginBottom: 14 }}>
+        <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>NOTIFICATIONS</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: Colors.textPrimary }}>Daily Data Submitted</Text>
+            <Text style={{ fontSize: 12, color: Colors.textMuted, marginTop: 2 }}>
+              Alert when a worker submits today's data
+            </Text>
+          </View>
+          <Switch
+            value={notifPrefs.dailyDataSubmitted}
+            onValueChange={(val) => handleTogglePref('dailyDataSubmitted', val)}
+            disabled={prefsSaving}
+            trackColor={{ false: Colors.border, true: Colors.primaryLight }}
+            thumbColor={notifPrefs.dailyDataSubmitted ? Colors.primary : Colors.textMuted}
+          />
+        </View>
+      </Card>
 
       {/* Logout Button */}
       <Button

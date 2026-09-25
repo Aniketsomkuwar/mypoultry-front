@@ -16,24 +16,33 @@ import { Api } from '../../services/api';
 
 export const WeightModal = ({ visible, onClose, onSuccess, batchId, batchDay = 1 }) => {
   const [sampleCount, setSampleCount] = useState('50');
-  const [averageWeight, setAverageWeight] = useState('');
+  const [totalWeight, setTotalWeight] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSave = async () => {
-    const wt = parseFloat(averageWeight);
-    const count = parseInt(sampleCount, 10);
+  // Derived: average = total / count
+  const sampleCountNum = parseInt(sampleCount, 10) || 0;
+  const totalWeightNum = parseFloat(totalWeight) || 0;
+  const computedAvg = sampleCountNum > 0 && totalWeightNum > 0
+    ? Number((totalWeightNum / sampleCountNum).toFixed(4))
+    : 0;
 
-    if (isNaN(wt) || wt <= 0) {
-      setErrorMsg('Please enter a valid average weight in KG (e.g. 1.82).');
-      return;
-    }
+  const handleSave = async () => {
+    const count = parseInt(sampleCount, 10);
+    const total = parseFloat(totalWeight);
+
     if (isNaN(count) || count <= 0) {
-      setErrorMsg('Sample bird count must be at least 1 (e.g. 50 birds).');
+      setErrorMsg('Bird count must be at least 1.');
       return;
     }
+    if (isNaN(total) || total <= 0) {
+      setErrorMsg('Please enter a valid total weight in KG.');
+      return;
+    }
+
+    const avgWt = Number((total / count).toFixed(4));
 
     setLoading(true);
     setErrorMsg('');
@@ -41,13 +50,13 @@ export const WeightModal = ({ visible, onClose, onSuccess, batchId, batchDay = 1
       const res = await Api.addWeightLog({
         batchId,
         sampleCount: count,
-        averageWeight: wt,
+        averageWeight: avgWt,
         date,
         notes: notes.trim(),
       });
 
       if (res && res.success) {
-        setAverageWeight('');
+        setTotalWeight('');
         setNotes('');
         if (onSuccess) onSuccess(res.weightLog);
         onClose();
@@ -60,10 +69,6 @@ export const WeightModal = ({ visible, onClose, onSuccess, batchId, batchDay = 1
       setLoading(false);
     }
   };
-
-  const sampleCountNum = parseInt(sampleCount, 10) || 0;
-  const avgWeightNum = parseFloat(averageWeight) || 0;
-  const totalSampleKg = (sampleCountNum * avgWeightNum).toFixed(1);
 
   return (
     <Modal visible={visible} transparent animationType="slide">
@@ -85,35 +90,35 @@ export const WeightModal = ({ visible, onClose, onSuccess, batchId, batchDay = 1
             </View>
           ) : null}
 
-          {/* Quick summary preview */}
-          {avgWeightNum > 0 ? (
+          {/* Live computed preview */}
+          {computedAvg > 0 ? (
             <View style={styles.calcPreviewBox}>
-              <Text style={styles.calcTitle}>SAMPLE CALCULATION</Text>
+              <Text style={styles.calcTitle}>COMPUTED AVERAGE</Text>
               <Text style={styles.calcBig}>
-                {avgWeightNum.toFixed(2)} KG <Text style={styles.calcSub}>avg / bird</Text>
+                {computedAvg.toFixed(3)} KG <Text style={styles.calcSub}>per bird</Text>
               </Text>
               <Text style={styles.calcDetail}>
-                {sampleCountNum} sample birds = {totalSampleKg} KG total live sample
+                {totalWeightNum.toFixed(1)} KG total / {sampleCountNum} birds
               </Text>
             </View>
           ) : null}
 
           <Input
-            label="Average Body Weight (KG)"
-            placeholder="e.g. 1.82"
-            value={averageWeight}
-            onChangeText={setAverageWeight}
-            keyboardType="decimal-pad"
-            helperText="Average weight per bird in kilograms"
-          />
-
-          <Input
-            label="Sample Bird Count"
+            label="Birds Weighed (Sample Count)"
             placeholder="e.g. 50"
             value={sampleCount}
             onChangeText={setSampleCount}
             keyboardType="numeric"
-            helperText="Number of birds weighed in this sample"
+            helperText="Number of birds you put on the scale"
+          />
+
+          <Input
+            label="Total Weight of All Birds (KG)"
+            placeholder="e.g. 91.00"
+            value={totalWeight}
+            onChangeText={setTotalWeight}
+            keyboardType="decimal-pad"
+            helperText="Combined weight of all weighed birds — average is calculated for you"
           />
 
           <Input

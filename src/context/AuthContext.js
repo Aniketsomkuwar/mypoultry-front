@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Api, setOnUnauthorized } from '../services/api';
 import { OfflineSync, subscribeSyncStatus } from '../services/offlineSync';
+import { registerForPushNotifications, unregisterPushToken } from '../services/notifications';
 
 const AuthContext = createContext(null);
 
@@ -13,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [syncStatus, setSyncStatus] = useState('SYNCED');
 
   const logout = async () => {
+    await unregisterPushToken().catch(() => {});
     await AsyncStorage.removeItem('@poultry_auth_token');
     await AsyncStorage.removeItem('@poultry_user_info');
     await AsyncStorage.removeItem('@poultry_farm_info');
@@ -93,6 +95,8 @@ export const AuthProvider = ({ children }) => {
         setUser(res.user);
         setFarm(res.farm);
         setActiveBatch(res.activeBatch);
+        // Register push token after successful login (fire-and-forget)
+        registerForPushNotifications().catch(() => {});
         return { success: true };
       }
       return { success: false, message: res.message || 'Login failed' };

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
   StyleSheet,
@@ -29,6 +29,10 @@ import { FarmerReportsScreen } from './src/screens/farmer/FarmerReportsScreen';
 import { BatchPerformanceScreen } from './src/screens/farmer/BatchPerformanceScreen';
 import { FarmEarningsScreen } from './src/screens/farmer/FarmEarningsScreen';
 import { FarmerProfileScreen } from './src/screens/farmer/FarmerProfileScreen';
+import { FarmerWeightsScreen } from './src/screens/farmer/FarmerWeightsScreen';
+import { FarmerTimelineScreen } from './src/screens/farmer/FarmerTimelineScreen';
+import { FarmerWaterScreen } from './src/screens/farmer/FarmerWaterScreen';
+import { setupNotificationListener } from './src/services/notifications';
 
 const SCREEN_LABELS = {
   Home: 'Home',
@@ -39,6 +43,7 @@ const SCREEN_LABELS = {
   Reports: 'Reports',
   Performance: 'Batch Performance',
   Earnings: 'Farm Earnings',
+  Weights: 'Body Weight',
   Profile: 'Profile',
   TodayEntry: "Today's Entry",
   History: 'History',
@@ -66,6 +71,13 @@ function MainApp() {
   const goBack = useCallback(() => {
     setNavStack((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
   }, []);
+
+  // Phase 10: wire notification tap-to-navigate
+  useEffect(() => {
+    if (!user) return;
+    const cleanup = setupNotificationListener(navigate, setSelectedBatchId);
+    return cleanup;
+  }, [user, navigate]);
 
   if (loading) {
     return (
@@ -121,6 +133,12 @@ function MainApp() {
           return <BatchPerformanceScreen onNavigate={navigate} selectedBatchId={selectedBatchId} />;
         case 'Earnings':
           return <FarmEarningsScreen onNavigate={navigate} batchId={selectedBatchId} />;
+        case 'Weights':
+          return <FarmerWeightsScreen onNavigate={navigate} selectedBatchId={selectedBatchId} />;
+        case 'Timeline':
+          return <FarmerTimelineScreen onNavigate={navigate} />;
+        case 'Water':
+          return <FarmerWaterScreen onNavigate={navigate} />;
         case 'Profile':
           return <FarmerProfileScreen onNavigate={navigate} onSelectBatch={setSelectedBatchId} />;
         default:
