@@ -128,7 +128,6 @@ export const FarmerWeightsScreen = ({ onNavigate, selectedBatchId }) => {
 
       {summary.length === 0 && !loading ? (
         <EmptyState
-          icon="⚖️"
           title="No Weight Data"
           description="You haven't logged any body weight samples for this batch yet."
         />

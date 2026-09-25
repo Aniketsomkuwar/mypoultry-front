@@ -71,6 +71,8 @@ export async function unregisterPushToken() {
  * navigateFn = (screen, batchId?) => void
  */
 export function setupNotificationListener(navigateFn, setSelectedBatchId) {
+  if (Platform.OS === 'web') return () => {};
+
   // Handle taps while the app is open or in background
   const sub = Notifications.addNotificationResponseReceivedListener((response) => {
     handleNotificationTap(response.notification.request.content.data, navigateFn, setSelectedBatchId);
